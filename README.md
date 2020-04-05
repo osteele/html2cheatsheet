@@ -13,5 +13,3 @@ cheatset generate Final_Cut_Pro.rb
 ## To do
 
 - Use a filter to quote
-- Rename the command key modifiers to CMD+ SHIFT+
-- Try not to include really common keyboard shortcuts (e.g. Copy, Paste, Undo, Select All).

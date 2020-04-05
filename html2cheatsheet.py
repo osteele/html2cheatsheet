@@ -25,6 +25,8 @@ PUNCTUATION_NAMES = [
 
 PUNCTUATION_RE = re.compile(r"(?:" + "|".join(PUNCTUATION_NAMES) + ") \((.+?)\)")
 
+CUT_COPY_PASTE = {("Cut", "CMD+X"), ("Copy", "CMD+C"), ("Paste", "CMD+V")}
+
 
 @dataclass
 class Entry:
@@ -54,9 +56,14 @@ def gen_categories(soup):
     for section in soup.select(".Subhead"):
         title = section.select("h2.Name")[0].get_text()
         entries = [
-            Entry.from_row(td.get_text() for td in row.select("td"))
+            Entry.from_row(td.get_text().strip() for td in row.select("td"))
             for row in section.select("tr")
             if row.select("td")
+        ]
+        entries = [
+            entry
+            for entry in entries
+            if (entry.name.strip("'"), entry.key.strip("'")) not in CUT_COPY_PASTE
         ]
         yield repr(title), entries
 
