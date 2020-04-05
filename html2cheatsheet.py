@@ -38,6 +38,8 @@ COMMON_SHORTCUTS = {
     "CMD+V": "Paste",
 }
 
+template = Template(Path("cheatsheet.rb.j2").read_text())
+
 
 @dataclass
 class Entry:
@@ -69,9 +71,6 @@ class Entry:
         )
 
 
-template = Template(Path("cheatsheet.jinja").read_text())
-
-
 def gen_categories(soup):
     for section in soup.select(".Subhead"):
         title = section.select("h2.Name")[0].get_text()
@@ -84,17 +83,23 @@ def gen_categories(soup):
         yield repr(title), entries
 
 
-response = requests.get(
-    "https://support.apple.com/guide/final-cut-pro/keyboard-shortcuts-ver90ba5929/mac"
-)
-assert response.status_code
-soup = BeautifulSoup(response.content, "html.parser")
+def html2cheatsheet(name, source_url):
+    response = requests.get(source_url)
+    assert response.status_code
+    soup = BeautifulSoup(response.content, "html.parser")
 
-out = template.render(
-    title=repr("Final Cut Pro"),
-    filename=repr("Final_Cut_Pro"),
-    keyword=repr("fcp"),
-    categories=list(gen_categories(soup)),
-)
+    out = template.render(
+        source_url=source_url,
+        title=repr(name),
+        filename=repr(name.replace(" ", "_")),
+        keyword=repr("fcp"),
+        categories=list(gen_categories(soup)),
+    )
 
-Path("Final_Cut_Pro.rb").write_text(out + "\n")
+    Path("Final_Cut_Pro.rb").write_text(out + "\n")
+
+
+html2cheatsheet(
+    "Final Cut Pro",
+    "https://support.apple.com/guide/final-cut-pro/keyboard-shortcuts-ver90ba5929/mac",
+)
