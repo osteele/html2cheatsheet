@@ -6,6 +6,25 @@ from dataclasses import dataclass
 from typing import List
 import re
 
+MODIFIERS = {"Command": "CMD", "Control": "CTRL", "Option": "ALT", "Shift": "SHIFT"}
+
+MODIFIER_PREFIXES = {k + "-": v + "+" for k, v in MODIFIERS.items()}
+
+PUNCTUATION_NAMES = [
+    "Apostrophe",
+    "Backslash",
+    "Comma",
+    "Equal Sign",
+    "Grave Accent",
+    "Hyphen",
+    "Left Bracket",
+    "Period",
+    "Semicolon",
+    "SlashRight Bracket",
+]
+
+PUNCTUATION_RE = re.compile(r"(?:" + "|".join(PUNCTUATION_NAMES) + ") \((.+?)\)")
+
 
 @dataclass
 class Entry:
@@ -16,17 +35,16 @@ class Entry:
     @staticmethod
     def from_row(row):
         notes, name, key = row
-        notes = notes.replace(r"\xa0", " ")
-        key = key.replace("Command-", "CMD+")
-        key = key.replace("Control-", "CTRL+")
-        key = key.replace("Shift-", "SHIFT+")
-        key = key.replace("Option-", "ALT+")
-        key = re.sub(
-            r"(Grave Accent|Comma|Hyphen|Period|Equal Sign|Left Bracket|Backslash|SlashRight Bracket|Semicolon|Apostrophe) \((.+?)\)",
-            r"\2",
-            key,
-        )
-        return Entry(name, key, notes)
+        notes = notes.replace("\xa0", " ")
+
+        modifiers = []
+        for k, v in MODIFIER_PREFIXES.items():
+            if k in key:
+                key = key.replace(k, "")
+                modifiers.append(v)
+        key = "".join(modifiers) + PUNCTUATION_RE.sub(r"\1", key)
+
+        return Entry(repr(name), repr(key), repr(notes))
 
 
 template = Template(Path("cheatsheet.jinja").read_text())
@@ -35,18 +53,11 @@ template = Template(Path("cheatsheet.jinja").read_text())
 def gen_categories(soup):
     for section in soup.select(".Subhead"):
         title = section.select("h2.Name")[0].get_text()
-        # row: [descripion, name, key]
-        # rows = [
-        #     [repr(td.get_text()) for td in row.select("td")]
-        #     for row in section.select("tr")
-        # ]
         entries = [
-            Entry.from_row(repr(td.get_text()) for td in row.select("td"))
+            Entry.from_row(td.get_text() for td in row.select("td"))
             for row in section.select("tr")
             if row.select("td")
         ]
-        # print(entries[0])
-        # break
         yield repr(title), entries
 
 
