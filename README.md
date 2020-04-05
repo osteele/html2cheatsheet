@@ -1,4 +1,4 @@
-# FCP Cheatsheet Generator
+# HTML to Cheatsheet Generator
 
 Generate a Kapelli Dash cheatsheet for Final Cut Pro.
 
