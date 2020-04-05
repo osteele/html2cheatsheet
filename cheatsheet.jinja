@@ -1,17 +1,18 @@
 cheatsheet do
-  title {{ title }}               # Will be displayed by Dash in the docset list
-  docset_file_name {{ filename }}    # Used for the filename of the docset
-  keyword {{ keyword }}            # Used as the initial search keyword (listed in Preferences > Docsets)
+  title {{ title }}
+  docset_file_name {{ filename }}
+  keyword {{ keyword }}
 
   {%- if resources_dir -%}
   resources '{{ resources_dir }}'
-  {% endif %}
+  {% endif -%}
 
   {%- if introduction -%}
   introduction '{{ introduction }}'
-  {% endif %}
+  {% endif -%}
 
   {% for category in categories %}
+
   category do
     id {{ category[0] }}
 
@@ -21,7 +22,7 @@ cheatsheet do
       command {{ entry.key }}
       notes {{ entry.notes }}
     end
-    {% endfor %}
+    {%- endfor %}
   end
-  {% endfor %}
+  {%- endfor %}
 end
