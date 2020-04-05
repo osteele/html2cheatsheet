@@ -12,4 +12,4 @@ cheatset generate Final_Cut_Pro.rb
 
 ## To do
 
-- Use a filter to quote
+Generalize this to work with other applications, e.g. Apple Motion.

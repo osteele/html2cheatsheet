@@ -3,28 +3,28 @@
 # Documentation source: {{ source_url }}
 
 cheatsheet do
-  title {{ title }}
-  docset_file_name {{ filename }}
-  keyword {{ keyword }}
+  title {{ title | quote }}
+  docset_file_name {{ filename | quote }}
+  keyword {{ keyword | quote }}
 
   {%- if resources_dir -%}
-  resources '{{ resources_dir }}'
+  resources {{ resources_dir | quote }}
   {% endif -%}
 
   {%- if introduction -%}
-  introduction '{{ introduction }}'
+  introduction {{ introduction | quote }}
   {% endif -%}
 
   {% for category in categories %}
 
   category do
-    id {{ category[0] }}
+    id {{ category[0] | quote }}
 
     {%- for entry in category[1] %}
     entry do
-      name {{ entry.name }}
-      command {{ entry.key }}
-      notes {{ entry.notes }}
+      name {{ entry.name | quote }}
+      command {{ entry.key | quote }}
+      notes {{ entry.notes | quote }}
     end
     {%- endfor %}
   end

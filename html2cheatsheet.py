@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from jinja2 import Template
+from jinja2 import Template, Environment
 from pathlib import Path
 from dataclasses import dataclass
 from typing import List
@@ -40,8 +40,6 @@ COMMON_SHORTCUTS = {
 
 REPLACEMENTS = {" (or Control-Option-C if the caption editor is open)": ""}
 
-template = Template(Path("cheatsheet.rb.j2").read_text())
-
 
 @dataclass
 class Entry:
@@ -65,11 +63,11 @@ class Entry:
 
         notes = notes.replace("\xa0", " ")
 
-        return Entry(repr(name), repr(key), repr(notes))
+        return Entry(name, key, notes)
 
     def is_trivial(self):
-        name_pattern = COMMON_SHORTCUTS.get(self.key.strip("'"))
-        name = self.name.strip("'")
+        name_pattern = COMMON_SHORTCUTS.get(self.key)
+        name = self.name
         return name_pattern and (
             name == name_pattern
             if isinstance(name_pattern, str)
@@ -77,35 +75,47 @@ class Entry:
         )
 
 
-def gen_categories(soup):
-    for section in soup.select(".Subhead"):
-        title = section.select("h2.Name")[0].get_text()
-        entries = [
-            Entry.from_row(td.get_text().strip() for td in row.select("td"))
-            for row in section.select("tr")
-            if row.select("td")
-        ]
-        entries = [entry for entry in entries if not entry.is_trivial()]
-        yield repr(title), entries
+def get_categories(html_content):
+    """Returns [(name, [Entry])]"""
+
+    def gen_categories(soup):
+        for section in soup.select(".Subhead"):
+            title = section.select("h2.Name")[0].get_text()
+            entries = [
+                Entry.from_row(td.get_text().strip() for td in row.select("td"))
+                for row in section.select("tr")
+                if row.select("td")
+            ]
+            entries = [entry for entry in entries if not entry.is_trivial()]
+            yield title, entries
+
+    soup = BeautifulSoup(html_content, "html.parser")
+    return list(gen_categories(soup))
 
 
-def html2cheatsheet(name, source_url):
+def html2cheatsheet(*, name, keyword, source_url):
+    filename = name.replace(" ", "_")
+
+    env = Environment()
+    env.filters["quote"] = repr  # For the current data set, Python repr works for Ruby
+    template = env.from_string(Path("cheatsheet.rb.j2").read_text())
+
     response = requests.get(source_url)
     assert response.status_code
-    soup = BeautifulSoup(response.content, "html.parser")
 
     out = template.render(
         source_url=source_url,
-        title=repr(name),
-        filename=repr(name.replace(" ", "_")),
-        keyword=repr("fcp"),
-        categories=list(gen_categories(soup)),
+        title=name,
+        filename=filename,
+        keyword=keyword,
+        categories=get_categories(response.content),
     )
 
-    Path("Final_Cut_Pro.rb").write_text(out + "\n")
+    Path(filename + ".rb").write_text(out + "\n")
 
 
 html2cheatsheet(
-    "Final Cut Pro",
-    "https://support.apple.com/guide/final-cut-pro/keyboard-shortcuts-ver90ba5929/mac",
+    name="Final Cut Pro",
+    keyword="fcp",
+    source_url="https://support.apple.com/guide/final-cut-pro/keyboard-shortcuts-ver90ba5929/mac",
 )
