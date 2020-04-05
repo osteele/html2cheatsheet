@@ -38,6 +38,8 @@ COMMON_SHORTCUTS = {
     "CMD+V": "Paste",
 }
 
+REPLACEMENTS = {" (or Control-Option-C if the caption editor is open)": ""}
+
 template = Template(Path("cheatsheet.rb.j2").read_text())
 
 
@@ -50,14 +52,18 @@ class Entry:
     @staticmethod
     def from_row(row):
         notes, name, key = row
-        notes = notes.replace("\xa0", " ")
 
+        for k, v in REPLACEMENTS.items():
+            if k in key:
+                key = key.replace(k, v)
         modifiers = []
         for k, v in MODIFIER_PREFIXES.items():
             if k in key:
                 key = key.replace(k, "")
                 modifiers.append(v)
         key = "".join(modifiers) + PUNCTUATION_RE.sub(r"\1", key)
+
+        notes = notes.replace("\xa0", " ")
 
         return Entry(repr(name), repr(key), repr(notes))
 
