@@ -6,10 +6,13 @@ from dataclasses import dataclass
 from typing import List
 import re
 
+# {Apple name: Dash name} in required output order
 MODIFIERS = {"Command": "CMD", "Control": "CTRL", "Option": "ALT", "Shift": "SHIFT"}
 
+# e.g. {"Command-": "CMD+"}, for easier substitution, below
 MODIFIER_PREFIXES = {k + "-": v + "+" for k, v in MODIFIERS.items()}
 
+# Names to remvoe from "Backslash (/)" -> "/"
 PUNCTUATION_NAMES = [
     "Apostrophe",
     "Backslash",
@@ -19,13 +22,21 @@ PUNCTUATION_NAMES = [
     "Hyphen",
     "Left Bracket",
     "Period",
+    "Right Bracket",
     "Semicolon",
-    "SlashRight Bracket",
+    "Slash",
 ]
 
 PUNCTUATION_RE = re.compile(r"(?:" + "|".join(PUNCTUATION_NAMES) + ") \((.+?)\)")
 
-CUT_COPY_PASTE = {("Cut", "CMD+X"), ("Copy", "CMD+C"), ("Paste", "CMD+V")}
+# Exclude these
+COMMON_SHORTCUTS = {
+    "CTRL+Z": re.compile("Undo( the last change)?"),
+    "SHIFT+CMD+Z": re.compile("Redo( the last change)?"),
+    "CMD+X": "Cut",
+    "CMD+C": "Copy",
+    "CMD+V": "Paste",
+}
 
 
 @dataclass
@@ -48,6 +59,15 @@ class Entry:
 
         return Entry(repr(name), repr(key), repr(notes))
 
+    def is_trivial(self):
+        name_pattern = COMMON_SHORTCUTS.get(self.key.strip("'"))
+        name = self.name.strip("'")
+        return name_pattern and (
+            name == name_pattern
+            if isinstance(name_pattern, str)
+            else name_pattern.fullmatch(name)
+        )
+
 
 template = Template(Path("cheatsheet.jinja").read_text())
 
@@ -60,11 +80,7 @@ def gen_categories(soup):
             for row in section.select("tr")
             if row.select("td")
         ]
-        entries = [
-            entry
-            for entry in entries
-            if (entry.name.strip("'"), entry.key.strip("'")) not in CUT_COPY_PASTE
-        ]
+        entries = [entry for entry in entries if not entry.is_trivial()]
         yield repr(title), entries
 
 
@@ -81,4 +97,4 @@ out = template.render(
     categories=list(gen_categories(soup)),
 )
 
-Path("Final_Cut_Pro.rb").write_text(out)
+Path("Final_Cut_Pro.rb").write_text(out + "\n")
