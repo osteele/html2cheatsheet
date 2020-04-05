@@ -12,4 +12,9 @@ cheatset generate Final_Cut_Pro.rb
 
 ## To do
 
-Generalize this to work with other applications, e.g. Apple Motion.
+- Generalize this to work with other applications, e.g. Apple Motion.
+- Simplify the installation; maybe port to Ruby
+
+## License
+
+MIT
